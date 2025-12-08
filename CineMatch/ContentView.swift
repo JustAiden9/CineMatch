@@ -9,13 +9,29 @@ import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        NavigationStack {
+            VStack(spacing: 28) {
+                Spacer()
+
+                VStack(spacing: 8) {
+                    Text("CineMatch")
+                        .font(.largeTitle).bold()
+                    Text("Movie matchup party game")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
+                NavigationLink {
+                    SplitScreenView()
+                } label: {
+                    Label("Start Game", systemImage: "play.fill")
+                        .font(.headline)
+                }
+                .buttonStyle(.borderedProminent)
+                .padding(.horizontal)
+                Spacer()
+            }
         }
-        .padding()
     }
 }
 

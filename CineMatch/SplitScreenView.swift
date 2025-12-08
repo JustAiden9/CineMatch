@@ -11,31 +11,22 @@ struct SplitScreenView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Player 2 (Top)
-            PlayerZoneView(playerID: 2)
+            PlayerView(playerID: 2)
                 .rotationEffect(.degrees(180))
-                .ignoresSafeArea()
-
-            // Divider
-            Rectangle()
-                .frame(height: 2)
-                .foregroundColor(.gray)
-
             // Player 1 (Bottom)
-            PlayerZoneView(playerID: 1)
-                .ignoresSafeArea()
+            PlayerView(playerID: 1)
+
         }
     }
 }
 
-struct PlayerZoneView: View {
+struct PlayerView: View {
     let playerID: Int
     var body: some View {
         ZStack {
             Color.clear
-            Text("Player \(playerID) Zone")
-                .font(.headline)
+            MovieCardView()
         }
-        .frame(height: 300)
     }
 }
 

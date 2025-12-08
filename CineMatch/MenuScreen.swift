@@ -10,7 +10,7 @@ import SwiftUI
 struct MenuScreen: View {
     var body: some View {
         VStack {
-            Text("Menu Screen")
+            Text("CineMatch")
                 .font(.largeTitle)
                 .bold()
         }
