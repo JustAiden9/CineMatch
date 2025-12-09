@@ -10,6 +10,9 @@ import SwiftUI
 struct ContentView: View {
     @State private var tmdbApiKey: String = ""
     @State private var isInputFocused: Bool = false
+    @State private var selectedLanguage: String = "en-US"
+    @State private var selectedPage: Int = 1
+    let languages = ["en-US", "es-ES", "fr-FR", "de-DE", "it-IT", "ja-JP", "pt-BR"]
     
     var body: some View {
         NavigationStack {
@@ -79,11 +82,75 @@ struct ContentView: View {
                                     .stroke(Color.white.opacity(0.1), lineWidth: 1) //outline
                             )
                         }
+                        
+                        HStack(spacing: 15) {
+                            // Language Picker
+                            VStack(alignment: .leading, spacing: 5) {
+                                Text("LANGUAGE")
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .foregroundStyle(.white.opacity(0.4))
+                                    .padding(.leading, 4)
+                                
+                                Menu {
+                                    Picker("Language", selection: $selectedLanguage) {
+                                        ForEach(languages, id: \.self) { lang in
+                                            Text(lang).tag(lang)
+                                        }
+                                    }
+                                } label: {
+                                    HStack {
+                                        Text(selectedLanguage)
+                                        Spacer()
+                                        Image(systemName: "chevron.down")
+                                    }
+                                    .padding()
+                                    .background(Color.black.opacity(0.3))
+                                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                                    )
+                                    .foregroundStyle(.white)
+                                }
+                            }
+                            
+                            // Page Picker
+                            VStack(alignment: .leading, spacing: 5) {
+                                Text("PAGE")
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .foregroundStyle(.white.opacity(0.4))
+                                    .padding(.leading, 4)
+                                
+                                Menu {
+                                    Picker("Page", selection: $selectedPage) {
+                                        ForEach(1...20, id: \.self) { page in
+                                            Text("Page \(page)").tag(page)
+                                        }
+                                    }
+                                } label: {
+                                    HStack {
+                                        Text("\(selectedPage)")
+                                        Spacer()
+                                        Image(systemName: "chevron.down")
+                                    }
+                                    .padding()
+                                    .background(Color.black.opacity(0.3))
+                                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                                    )
+                                    .foregroundStyle(.white)
+                                }
+                            }
+                        }
                        
                         // Start Button
                         NavigationLink {
                             if !tmdbApiKey.isEmpty {
-                                SplitScreenView(apiKey: tmdbApiKey)
+                                SplitScreenView(apiKey: tmdbApiKey, language: selectedLanguage, page: selectedPage)
                             }
                         } label: {
                             HStack {
@@ -111,7 +178,7 @@ struct ContentView: View {
                         .animation(.easeInOut, value: tmdbApiKey.isEmpty)
                     }
                     .padding(30)
-                    .background(.ultraThinMaterial) 
+                    .background(.ultraThinMaterial)
                     .clipShape(RoundedRectangle(cornerRadius: 35))
                     .padding(.horizontal, 20)
                     

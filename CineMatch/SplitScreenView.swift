@@ -9,6 +9,8 @@ import SwiftUI
 
 struct SplitScreenView: View {
     let apiKey: String
+    let language: String
+    let page: Int
     
     // @StateObject: We create the GameManager here. This object "owns" the data/the api response.
     @StateObject private var gameManager = GameManager()
@@ -66,7 +68,7 @@ struct SplitScreenView: View {
         .task {
             // As soon as this view appears, start downloading movies.
             // 'await' means we wait for the download to finish without freezing the app
-            await gameManager.fetchPopularMovies(apiKey: apiKey)
+            await gameManager.fetchPopularMovies(apiKey: apiKey, language: language, page: page)
         }
     }
     

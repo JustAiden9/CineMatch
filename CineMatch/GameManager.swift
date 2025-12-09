@@ -53,19 +53,19 @@ class GameManager: ObservableObject {
     
     // function to add a movie to the match list
     private func createMatch(movie: Movie) {
-        // Verify we haven't already added this match to the UI this is used to prevent duplicates 
+        // Verify, this match is used to the UI this is used to prevent duplicates
         if !matches.contains(where: { $0.id == movie.id }) {
             matches.append(movie)
         }
     }
     
     // function to fetch all the name and photo data from TMDB
-    func fetchPopularMovies(apiKey: String) async {
+    func fetchPopularMovies(apiKey: String, language: String, page: Int) async {
         // Ensure the API key isn't empty before we try
         guard !apiKey.isEmpty else { return }
         
         // 1. Create the URL (This is based on the API Docs for TMDB)
-        guard let url = URL(string: "https://api.themoviedb.org/3/movie/popular?language=en-US&page=1") else { return }
+        guard let url = URL(string: "https://api.themoviedb.org/3/movie/popular?language=\(language)&page=\(page)") else { return }
         
         // 2. Create the Request
         // We need a 'URLRequest' so we can use our API below
