@@ -8,116 +8,107 @@
 import Foundation
 import Combine
 
-// Define a Movie struct that can be identified uniquely and converted to/from JSON
 struct Movie: Identifiable, Codable {
-    let id: Int                  // Unique identifier for the movie
-    let title: String            // The movie's title/name
-    let posterPath: String?      // Optional URL path to the movie poster image
-    
-    // Enum to map Swift property names to JSON keys from the API
-    enum CodingKeys: String, CodingKey {
-        case id                  // "id" in JSON maps to id property
-        case title               // "title" in JSON maps to title property
-        case posterPath = "poster_path"  // "poster_path" in JSON maps to posterPath property
-    }
+    let id: Int                  // Unique ID from TMDB
+    let title: String            // Movie title
+    let posterPath: String?      // URL path for the poster image like "/abc.jpg"
 }
 
-// Define the structure of the API response that contains an array of movies
+// Structure for the initial API response which wraps the list of movies
 struct MovieResponse: Codable {
-    let results: [Movie]         // Array of Movie list from the API response
+    let results: [Movie]
 }
 
-// GameManager handles all the game logic and data management
-// ObservableObject: Allows SwiftUI views to watch for changes in this class
+// GameManager handles all the game logic (state) and data fetching
 class GameManager: ObservableObject {
-    // @Published makes SwiftUI automatically update views when this array changes
-    // This array holds all the movies currently in the deck
-    @Published var movies: [Movie] = []
+    @Published var movies: [Movie] = []   // The deck of movies users see
+    @Published var matches: [Movie] = []  // Movies both users liked
+    // A 'Set' is like an Array, but it is much faster for looking up numbers
+    // you can't like a movie twice
+    private var player1Likes: Set<Int> = []
+    private var player2Likes: Set<Int> = []
     
-    // Dictionary to store which movies each user has liked
-    // Key: User ID (Int), Value: Set of liked movie IDs
-    var likes: [Int : Set<Int>] = [:]
+    func recordDecision(playerID: Int, movie: Movie, liked: Bool) {
+        // Guard Statement: If they disliked it (swiped left), we stop here
+        // I only care about tracking Likes for matches
+        guard liked else { return }
+        if playerID == 1 {
+            // Add this movie ID to Player 1's list of likes
+            player1Likes.insert(movie.id)
+            // CHECK: Has Player 2 ALREADY liked this specific movie
+            if player2Likes.contains(movie.id) {
+                // if yes match
+                createMatch(movie: movie)
+            }
+        } else {
+            // Same logic for Player 2
+            player2Likes.insert(movie.id)
+            
+            // Check if Player 1 has already liked it
+            if player1Likes.contains(movie.id) {
+                createMatch(movie: movie)
+            }
+        }
+    }
     
-    // Base URL for constructing full image URLs from poster paths
-    // TMDB requires combining this base URL with the poster path
-    private let imageBaseURL = "https://image.tmdb.org/t/p/w500"
+    // function to add a movie to the match list
+    private func createMatch(movie: Movie) {
+        // Verify we haven't already added this match to the UI this is used to prevent duplicates 
+        if !matches.contains(where: { $0.id == movie.id }) {
+            matches.append(movie)
+        }
+    }
     
-    // Asynchronous function to fetch popular movies from TMDB API
+    // function to fetch all the name and photo data from TMDB
     func fetchPopularMovies(apiKey: String) async {
-        // Exit early if no API key is provided (guard statement so that it does not try to continue and throw errors into the api calls)
+        // Ensure the API key isn't empty before we try
         guard !apiKey.isEmpty else { return }
-
-        // Try to create a URL object from the API endpoint string
-        // If the creation fails, exit the function early
-        guard let url = URL(string: "https://api.themoviedb.org/3/movie/popular") else { return }
         
-        // Create a URLComponents object to safely build the URL with query parameters
-        // resolvingAgainstBaseURL: Ensures the URL is properly formed
-        var components = URLComponents(url: url, resolvingAgainstBaseURL: true)!
+        // 1. Create the URL (This is based on the API Docs for TMDB)
+        guard let url = URL(string: "https://api.themoviedb.org/3/movie/popular?language=en-US&page=1") else { return }
         
-        // Define the query parameters to add to the URL
-        // These specify we want English results from page 1
-        let queryItems: [URLQueryItem] = [
-            URLQueryItem(name: "language", value: "en-US"),  // Request English language results
-            URLQueryItem(name: "page", value: "2"),          // Request what ever page you want!
-        ]
-        
-        // Add query items to the URL components
-        // If queryItems already exist, append to them; otherwise, use our new ones
-        components.queryItems = components.queryItems.map { $0 + queryItems } ?? queryItems
-
-        // Get the final complete URL with all query parameters
-        // Exit if URL construction failed
-        guard let finalURL = components.url else { return }
-        
-        // Create a URL request object with our constructed URL
-        var request = URLRequest(url: finalURL)
-        
-        // Set the HTTP method to GET (retrieving data, not sending)
+        // 2. Create the Request
+        // We need a 'URLRequest' so we can use our API below
+        var request = URLRequest(url: url)
         request.httpMethod = "GET"
         
-        // Set HTTP headers required by the TMDB API
-        // accept: Tells the server we want JSON data back
-        // Authorization: Provides our API key for authentication (Bearer token format)
+        // 3. Add Authentication
+        // The API Key you use is a Bearer Token, which must go in the header, NOT the URL.
         request.allHTTPHeaderFields = [
             "accept": "application/json",
             "Authorization": "Bearer \(apiKey)"
         ]
-
-        // do-catch block code
+        
         do {
-            // Make the api request and wait for the response
-            // data: The JSON data returned from the API
+            // 4. Perform the Request
+            // 'await' pauses this function here until the internet responds
             let (data, _) = try await URLSession.shared.data(for: request)
             
-            // Convert the JSON data into a MovieResponse object as defined above
-            // JSONDecoder automatically maps JSON fields to our struct properties
-            let movieResponse = try JSONDecoder().decode(MovieResponse.self, from: data)
+            // 5. Decode the JSON
+            let decoder = JSONDecoder()
             
-            // Switch to the main thread to update the UI
-            // UI updates must happen on the main thread in iOS (learned this the hard way...)
+            // ADVANCED TRICK: .convertFromSnakeCase
+            // This automatically converts JSON keys like "poster_path" (snake_case)
+            // into Swift properties like "posterPath" (camelCase).
+            decoder.keyDecodingStrategy = .convertFromSnakeCase // this is the MOST helpfull thing ever, this allowed me to skip the translation/rewrite we would have needed to do!
+            
+            // Convert the raw data into our MovieResponse struct
+            let movieResponse = try decoder.decode(MovieResponse.self, from: data)
+            
+            // 6. Update the UI
+            // this jumps back to the MainActor to update @Published vars
             await MainActor.run {
-                // Update the movies array with the fetched results
-                // This triggers the @Published property, updating any listening views
                 self.movies = movieResponse.results
             }
         } catch {
-            // Silently ignore errors
         }
     }
     
-    // Function to remove a specific movie from the deck
-    // Called when a user swipes a card left or right
-    // withID: External parameter name for clarity when calling the function
-    // id: Internal parameter name used inside the function
+    // Removes a card from the deck so users don't see it again
     func removeMovie(withID id: Int) {
-        // Find the index position of the movie with the matching ID
-        // firstIndex returns the position if found, or nil if not found
+        // Find the index of the movie with this ID and remove it
         if let index = movies.firstIndex(where: { $0.id == id }) {
-            // Remove the movie at that index position from the array
-            // This automatically triggers UI updates due to @Published
             movies.remove(at: index)
         }
     }
 }
-
