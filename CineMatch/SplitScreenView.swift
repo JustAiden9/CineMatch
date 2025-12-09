@@ -81,21 +81,41 @@ struct SplitScreenView: View {
 
 // Players cards/movies
 // I made this so we didn't have to copy-paste the code for Player 1 and Player 2.
+// Players cards/movies
 struct PlayerView: View {
     let playerID: Int
-    @ObservedObject var gameManager: GameManager // @ObservedObject watches for changes in the shared manager, which is the GameManager
+    @ObservedObject var gameManager: GameManager
     var onFinished: (() -> Void)? = nil
     @State private var playerDeck: [Movie] = []
     @State private var didNotifyFinished: Bool = false
     
-    // If we try to show 20 cards at once, the animation lags BIG TIME
-    // We only create views for the top 3 cards this helps the framerate a TON
+    // Only render top 3 cards for performance
     var visibleMovies: [Movie] {
         Array(playerDeck.prefix(3))
     }
     
     var body: some View {
         ZStack {
+            // We place this first in the ZStack so it sits BEHIND the cards
+            HStack {
+                // Left Side: X (Dislike)
+                Image(systemName: "xmark")
+                    .font(.system(size: 25, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.3)) // Low opacity so it isn't distracting
+                    .padding(.leading, 30)
+                
+                Spacer()
+                
+                // Right Side: Check (Like)
+                Image(systemName: "checkmark")
+                    .font(.system(size: 25, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.3))
+                    .padding(.trailing, 30)
+            }
+            .frame(maxWidth: .infinity)
+            // Important: This allows touches to pass through the icons to the cards
+            .allowsHitTesting(false)
+            
             if playerDeck.isEmpty {
                 // Empty State: What shows when cards run out
                 VStack(spacing: 15) {
@@ -109,26 +129,22 @@ struct PlayerView: View {
             } else {
                 // Card Stack
                 ZStack {
-                    // We reverse the array so index 0 the first card and is drawn LAST on top of deck
-                    // In a ZStack, the last item is physically on top.
+                    // We reverse the array so index 0 is drawn LAST (on top)
                     ForEach(Array(visibleMovies.enumerated().reversed()), id: \.element.id) { index, movie in
                         let isTopCard = index == 0
                         
                         MovieCardView(
                             movie: movie,
                             onSwipeRight: {
-                                // Logic: Record Like -> Remove Card
                                 gameManager.recordDecision(playerID: playerID, movie: movie, liked: true)
                                 removeFromLocalDeck(movie.id)
                             },
                             onSwipeLeft: {
-                                // Logic: Record Dislike -> Remove Card
                                 gameManager.recordDecision(playerID: playerID, movie: movie, liked: false)
                                 removeFromLocalDeck(movie.id)
                             }
                         )
-                        // Visual Depth Logic:
-                        // Cards behind are smaller (scale), lower (offset), and faded (opacity)
+                        // Visual Depth Logic
                         .scaleEffect(isTopCard ? 1.0 : 0.9 + (Double(index) * 0.05))
                         .offset(y: isTopCard ? 0 : 25)
                         .opacity(isTopCard ? 1.0 : 0.5)
@@ -153,7 +169,6 @@ struct PlayerView: View {
     }
     
     private func removeFromLocalDeck(_ id: Int) {
-        // Small delay (0.2s) allows the swipe animation to finish before the card vanishes
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             if let index = playerDeck.firstIndex(where: { $0.id == id }) {
                 playerDeck.remove(at: index)
