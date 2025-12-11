@@ -12,7 +12,7 @@ struct ContentView: View {
     @State private var isInputFocused: Bool = false
     @State private var selectedLanguage: String = "en-US"
     @State private var selectedPage: Int = 1
-    let languages = ["en-US", "es-ES", "fr-FR", "de-DE", "it-IT", "ja-JP", "pt-BR"]
+    let languages = ["en-US", "es-ES", "fr-FR", "de-DE", "it-IT", "ja-JP", "pt-BR"] // list of langs that I wanted to use, they all work with TMDB
     
     var body: some View {
         NavigationStack {
@@ -24,7 +24,7 @@ struct ContentView: View {
                     endRadius: 500
                 )
                 
-                // the blurred circles behind the white gradient make glow
+                // the blurred circles behind the white gradient make glow (this is a new thing I learned to give a plain background a more suttle graident.)
                 VStack {
                     Circle()
                         .fill(Color.white.opacity(0.1))
@@ -40,7 +40,7 @@ struct ContentView: View {
 
                 VStack(spacing: 40) {
                     VStack(spacing: 12) {
-                        Image(systemName: "popcorn.fill") // switch to app icon soon...
+                        Image(systemName: "popcorn.fill") // nvm people prefered this
                             .font(.system(size: 60))
                             .foregroundStyle(.white)
                             .shadow(color: .white.opacity(0.5), radius: 20, x: 0, y: 0)
@@ -59,20 +59,17 @@ struct ContentView: View {
                             Text("ENTER ACCESS KEY")
                                 .font(.caption)
                                 .fontWeight(.bold)
-                                .foregroundStyle(.white.opacity(0.4))
+                                .foregroundStyle(.white.opacity(0.4)) // giving the text different opacity allows me to show different depths for the text.
                                 .padding(.leading, 4)
-                            
                             HStack {
                                 Image(systemName: "key.fill")
                                     .foregroundStyle(.white.opacity(0.5))
-                                
                                 SecureField("", text: $tmdbApiKey, prompt:  Text("TMDB API Key").foregroundColor(.gray)) // This is somthing new I learned about, it allows you to paste your key and make the bubble effect to make it secure/hidden
                                     .foregroundStyle(.white)
                                     .tint(.white) // Cursor color changed to white from blue
                             }
                             .padding()
-                            
-                            //API KEY bubbles
+                            //API KEY bubbles/outlines, this is what gives the sense that there is a box that you are typing into. If they are removed if has no box.
                             .background(
                                 RoundedRectangle(cornerRadius: 16)
                                     .fill(Color.black.opacity(0.3)) // dark
@@ -93,7 +90,7 @@ struct ContentView: View {
                                     .padding(.leading, 4)
                                 
                                 Menu {
-                                    Picker("Language", selection: $selectedLanguage) {
+                                    Picker("Language", selection: $selectedLanguage) { // updates the selectedLanguage Var based on what is picked.
                                         ForEach(languages, id: \.self) { lang in
                                             Text(lang).tag(lang)
                                         }
@@ -102,16 +99,17 @@ struct ContentView: View {
                                     HStack {
                                         Text(selectedLanguage)
                                         Spacer()
-                                        Image(systemName: "chevron.down")
+                                        Image(systemName: "chevron.down") // drop down arrow is a nice touch
                                     }
                                     .padding()
                                     .background(Color.black.opacity(0.3))
                                     .clipShape(RoundedRectangle(cornerRadius: 16))
+                                    // the overlay is for the white border
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 16)
                                             .stroke(Color.white.opacity(0.1), lineWidth: 1)
                                     )
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(.white) // instead of blue
                                 }
                             }
                             
@@ -124,8 +122,8 @@ struct ContentView: View {
                                     .padding(.leading, 4)
                                 
                                 Menu {
-                                    Picker("Page", selection: $selectedPage) {
-                                        ForEach(1...20, id: \.self) { page in
+                                    Picker("Page", selection: $selectedPage) { // same as lang it changes the Var based on what you pick
+                                        ForEach(1...20, id: \.self) { page in // You have 1-20 however there are more pages on TMBD
                                             Text("Page \(page)").tag(page)
                                         }
                                     }
@@ -152,7 +150,8 @@ struct ContentView: View {
                             if !tmdbApiKey.isEmpty {
                                 SplitScreenView(apiKey: tmdbApiKey, language: selectedLanguage, page: selectedPage)
                             }
-                        } label: {
+                        }
+                        label: {
                             HStack {
                                 Text("Start Session")
                                     .fontWeight(.bold)
@@ -162,7 +161,7 @@ struct ContentView: View {
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(
-                                // Button Gradient
+                                // Button Gradient using linear becuase it is not a circle
                                 LinearGradient(
                                     colors: [.white, Color(white: 0.8)],
                                     startPoint: .top,
@@ -173,7 +172,6 @@ struct ContentView: View {
                             .clipShape(Capsule())
                             .shadow(color: .white.opacity(0.25), radius: 10, x: 0, y: 5)
                         }
-                        .disabled(tmdbApiKey.isEmpty) // makes it so that if the user tries to click it, it wont work.
                         .opacity(tmdbApiKey.isEmpty ? 0.5 : 1.0)
                         .animation(.easeInOut, value: tmdbApiKey.isEmpty)
                     }
