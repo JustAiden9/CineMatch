@@ -21,14 +21,14 @@ struct MovieCardView: View {
     
     var body: some View {
         ZStack {
-            // The Card Background/Image
+            // the actual image
             AsyncImage(url: posterURL) { phase in
                 if let image = phase.image {
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                 } else {
-                    // Stylish Placeholder
+                    // placeholder if api is down or no movies populate
                     ZStack {
                         Color(white: 0.1)
                         Image(systemName: "film")
@@ -40,16 +40,13 @@ struct MovieCardView: View {
             .frame(width: 230, height: 370) // Slightly larger for better touch targets
             .clipped()
             
-            // 2. The Glass Title Overlay
             VStack {
                 Spacer()
                 VStack(alignment: .leading, spacing: 4) {
                     Text(movie.title)
                         .font(.system(size: 20, weight: .bold, design: .rounded))
                         .foregroundStyle(.white)
-                        .lineLimit(2)
                         .multilineTextAlignment(.leading)
-                    
                     Text("Swipe to decide")
                         .font(.system(size: 12, weight: .medium, design: .rounded))
                         .foregroundStyle(.white.opacity(0.6))
@@ -58,12 +55,6 @@ struct MovieCardView: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 16)
                 .background(.ultraThinMaterial) // The frosted glass effect
-                .overlay(
-                    Rectangle()
-                        .fill(LinearGradient(colors: [.white.opacity(0.2), .clear], startPoint: .top, endPoint: .bottom))
-                        .frame(height: 1),
-                    alignment: .top
-                )
             }
         }
         .frame(width: 230, height: 370)
@@ -80,11 +71,10 @@ struct MovieCardView: View {
                     lineWidth: 1.5
                 )
         )
-        .shadow(color: .black.opacity(0.5), radius: 20, x: 0, y: 10) // Deep shadow for depth
         // 4. Swipe Logic & Animation
         .offset(x: offset.width, y: offset.height * 0.4)
         .rotationEffect(.degrees(Double(offset.width / 20)))
-        .scaleEffect(abs(offset.width) > 100 ? 1.05 : 1.0) // Slight pop when dragging far
+        .scaleEffect(abs(offset.width) > 100 ? 1.05 : 1.0) // Slight pop when dragging far, abs allows our popeffect/drag to work both to the right and left, if we did not have abs it would only show to the right!
         .gesture(
             DragGesture()
                 .onChanged { gesture in
@@ -93,8 +83,7 @@ struct MovieCardView: View {
                     }
                 }
                 .onEnded { gesture in
-                    let swipeThreshold: CGFloat = 100
-                    
+                    let swipeThreshold: CGFloat = 100 // makes it so that you can peek without 
                     if gesture.translation.width > swipeThreshold {
                         // SWIPE RIGHT (LIKE)
                         withAnimation(.easeOut(duration: 0.3)) {
@@ -102,7 +91,6 @@ struct MovieCardView: View {
                             offset.height = 100
                         }
                         onSwipeRight?()
-                        
                     } else if gesture.translation.width < -swipeThreshold {
                         // SWIPE LEFT (DISLIKE)
                         withAnimation(.easeOut(duration: 0.3)) {

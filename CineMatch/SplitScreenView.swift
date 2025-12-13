@@ -12,7 +12,7 @@ struct SplitScreenView: View {
     let language: String
     let page: Int
     
-    // @StateObject: We create the GameManager here. This object "owns" the data/the api response.
+    // The code inizalizes the GameManager here. This object "owns" the data/the api response.
     @StateObject private var gameManager = GameManager()
     // Track if each player has finished swiping their deck
     @State private var player1Done: Bool = false
@@ -21,7 +21,7 @@ struct SplitScreenView: View {
 
     var body: some View {
         ZStack {
-            // RadialGradient gives it that glow in the center, I had a lot of fun with this and I think it looks good
+            // RadialGradient gives it that glow in the center, same thing that we did for the cirlces
             RadialGradient(
                 gradient: Gradient(colors: [Color(white: 0.15), Color.black]),
                 center: .center,
@@ -67,7 +67,7 @@ struct SplitScreenView: View {
         }
         .task {
             // As soon as this view appears, start downloading movies.
-            // 'await' means we wait for the download to finish without freezing the app
+            // 'await' means the code waits for the download to finish without freezing the app
             await gameManager.fetchPopularMovies(apiKey: apiKey, language: language, page: page)
         }
     }
@@ -91,7 +91,7 @@ struct PlayerView: View {
     @State private var playerDeck: [Movie] = []
     @State private var didNotifyFinished: Bool = false
     
-    // Only render top 3 cards for performance
+    // Only render top 3 cards for performance, if we did not have this the game would LAG a lot becuase it tries to load everything in at once rather than it loading it in cuncks.
     var visibleMovies: [Movie] {
         Array(playerDeck.prefix(3))
     }
@@ -132,14 +132,13 @@ struct PlayerView: View {
                 // Card Stack
                 ZStack {
                     // We reverse the array so index 0 is drawn LAST (on top)
-                    ForEach(Array(visibleMovies.enumerated().reversed()), id: \.element.id) { index, movie in
-                        let isTopCard = index == 0
-                        
+                    ForEach(Array(visibleMovies.enumerated().reversed()), id: \.element.id) { index, movie in // talk about enumerated
+                        let isTopCard = index == 0 // just a simple way to say that the top card is the first card shown to the user, we track which is which so that we can call each card with a id/number.
                         MovieCardView(
                             movie: movie,
                             onSwipeRight: {
                                 gameManager.recordDecision(playerID: playerID, movie: movie, liked: true)
-                                removeFromLocalDeck(movie.id)
+                                removeFromLocalDeck(movie.id) // removes it after
                             },
                             onSwipeLeft: {
                                 gameManager.recordDecision(playerID: playerID, movie: movie, liked: false)
