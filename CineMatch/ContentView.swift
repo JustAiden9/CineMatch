@@ -9,7 +9,6 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var tmdbApiKey: String = ""
-    @State private var isInputFocused: Bool = false
     @State private var selectedLanguage: String = "en-US"
     @State private var selectedPage: Int = 1
     let languages = ["en-US", "es-ES", "fr-FR", "de-DE", "it-IT", "ja-JP", "pt-BR"] // list of langs that I wanted to use, they all work with TMDB
